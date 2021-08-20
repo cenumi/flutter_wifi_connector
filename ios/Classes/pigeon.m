@@ -22,15 +22,58 @@ static NSDictionary<NSString*, id>* wrapResult(id result, FlutterError *error) {
       };
 }
 
+@interface WifiConfig ()
++(WifiConfig*)fromMap:(NSDictionary*)dict;
+-(NSDictionary*)toMap;
+@end
+
+@implementation WifiConfig
++(WifiConfig*)fromMap:(NSDictionary*)dict {
+  WifiConfig* result = [[WifiConfig alloc] init];
+  result.ssid = dict[@"ssid"];
+  if ((NSNull *)result.ssid == [NSNull null]) {
+    result.ssid = nil;
+  }
+  result.password = dict[@"password"];
+  if ((NSNull *)result.password == [NSNull null]) {
+    result.password = nil;
+  }
+  return result;
+}
+-(NSDictionary*)toMap {
+  return [NSDictionary dictionaryWithObjectsAndKeys:(self.ssid ? self.ssid : [NSNull null]), @"ssid", (self.password ? self.password : [NSNull null]), @"password", nil];
+}
+@end
 
 @interface NativeApiCodecReader : FlutterStandardReader
 @end
 @implementation NativeApiCodecReader
+- (nullable id)readValueOfType:(UInt8)type 
+{
+  switch (type) {
+    case 128:     
+      return [WifiConfig fromMap:[self readValue]];
+    
+    default:    
+      return [super readValueOfType:type];
+    
+  }
+}
 @end
 
 @interface NativeApiCodecWriter : FlutterStandardWriter
 @end
 @implementation NativeApiCodecWriter
+- (void)writeValue:(id)value 
+{
+  if ([value isKindOfClass:[WifiConfig class]]) {
+    [self writeByte:128];
+    [self writeValue:[value toMap]];
+  } else 
+{
+    [super writeValue:value];
+  }
+}
 @end
 
 @interface NativeApiCodecReaderWriter : FlutterStandardReaderWriter
@@ -66,6 +109,24 @@ void NativeApiSetup(id<FlutterBinaryMessenger> binaryMessenger, id<NativeApi> ap
       [channel setMessageHandler:^(id _Nullable message, FlutterReply callback) {
         NSString *input = message;
         [api connect:input completion:^(FlutterError *_Nullable error) {
+          callback(wrapResult(nil, error));
+        }];
+      }];
+    }
+    else {
+      [channel setMessageHandler:nil];
+    }
+  }
+  {
+    FlutterBasicMessageChannel *channel =
+      [FlutterBasicMessageChannel
+        messageChannelWithName:@"dev.flutter.pigeon.NativeApi.secureConnect"
+        binaryMessenger:binaryMessenger
+        codec:NativeApiGetCodec()];
+    if (api) {
+      [channel setMessageHandler:^(id _Nullable message, FlutterReply callback) {
+        WifiConfig *input = message;
+        [api secureConnect:input completion:^(FlutterError *_Nullable error) {
           callback(wrapResult(nil, error));
         }];
       }];

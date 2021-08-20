@@ -54,7 +54,20 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
     }
 
     override fun connect(arg: String, result: Result<Void>) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            connectAboveQ(arg, null, result)
+        } else {
+            connectUnderQ(arg, null, result)
+        }
 
+    }
+
+    override fun secureConnect(arg: WifiConfig, result: Result<Void>) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            connectAboveQ(arg.ssid, arg.password, result)
+        } else {
+            connectUnderQ(arg.ssid, arg.password, result)
+        }
     }
 
     override fun connectByPrefix(arg: String, result: Result<Void>) {
@@ -85,15 +98,57 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
         )
     }
 
+    @Suppress("DEPRECATION")
+    private fun createWifiConfig() = WifiConfiguration().apply {
+        allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
+
+        allowedProtocols.set(WifiConfiguration.Protocol.RSN)
+        allowedProtocols.set(WifiConfiguration.Protocol.WPA)
+
+        allowedAuthAlgorithms.clear()
+
+        allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP)
+        allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP)
+
+        allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40)
+        allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP104)
+        allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP)
+        allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun connectUnderQ(ssid: String, password: String?, result: Result<Void>) {
+        val config = createWifiConfig().apply {
+            SSID = "\"$ssid\""
+            if (password != null) {
+                preSharedKey = "\"$password\""
+                status = WifiConfiguration.Status.ENABLED
+
+                allowedKeyManagement.clear()
+                allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK)
+            }
+        }
+        connectUnderQ(config, result)
+    }
+
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun connectByPrefixAboveQ(arg: String, result: Result<Void>) {
+    private fun connectAboveQ(ssid: String, password: String?, result: Result<Void>) {
+        val specifier = WifiNetworkSpecifier.Builder().apply {
+            setSsid(ssid)
+            if (password != null) {
+                setWpa3Passphrase(password)
+            }
+        }.build()
+        connectAboveQ(specifier, result)
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun connectAboveQ(specifier: WifiNetworkSpecifier, result: Result<Void>) {
         if (networkCallback != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback!!)
         }
 
-        val specifier = WifiNetworkSpecifier.Builder()
-            .setSsidPattern(PatternMatcher(arg, PatternMatcher.PATTERN_PREFIX))
-            .build()
         val request = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -120,25 +175,16 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun connectByPrefixAboveQ(arg: String, result: Result<Void>) {
+        val specifier = WifiNetworkSpecifier.Builder()
+            .setSsidPattern(PatternMatcher(arg, PatternMatcher.PATTERN_PREFIX))
+            .build()
+        connectAboveQ(specifier, result)
+    }
+
     @Suppress("DEPRECATION")
     private fun connectByPrefixUnderQ(arg: String, result: Result<Void>) {
-        val conf = WifiConfiguration().apply {
-            allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
-
-            allowedProtocols.set(WifiConfiguration.Protocol.RSN)
-            allowedProtocols.set(WifiConfiguration.Protocol.WPA)
-
-            allowedAuthAlgorithms.clear()
-
-            allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP)
-            allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP)
-
-            allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40)
-            allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP104)
-            allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP)
-            allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP)
-        }
-
         val wifiScanReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val ssid =
@@ -146,7 +192,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
                         .maxByOrNull { scanResult -> scanResult.level }?.SSID
 
                 if (ssid != null) {
-                    connect(conf.apply { SSID = "\"$ssid\"" }, result)
+                    connectUnderQ(createWifiConfig().apply { SSID = "\"$ssid\"" }, result)
                 } else {
                     result.error("404", "target wifi not found", "nothing satisfied in scanResults")
                 }
@@ -165,7 +211,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
     }
 
     @Suppress("DEPRECATION")
-    private fun connect(conf: WifiConfiguration, result: Result<Void>) {
+    private fun connectUnderQ(conf: WifiConfiguration, result: Result<Void>) {
 
         val network = wifiManager.addNetwork(conf)
         if (network == -1) {
@@ -196,8 +242,6 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
                 }
             }
         }
-
-
         applicationContext.registerReceiver(
             wifiChangeReceiver,
             IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION)

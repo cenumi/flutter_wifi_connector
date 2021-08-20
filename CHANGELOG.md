@@ -7,7 +7,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- implementation connect(ssid)
+## [0.0.2] - 2021-08-20
+
+### Added
+
+- connect(String ssid, [String? password])
+- scureConnect(String ssid, String password)
 
 ## [0.0.1] - 2021-08-20
 

@@ -9,6 +9,23 @@ class WifiConnector extends NativeApi {
   WifiConnector._();
 
   static late final WifiConnector _instance = WifiConnector._();
+
+  @deprecated
+  @override
+  Future<void> secureConnect(_) async {}
+
+  @override
+  Future<void> connect(String ssid, [String? password]) async {
+    if (password == null) {
+      return super.connect(ssid);
+    } else {
+      return super.secureConnect(
+        WifiConfig()
+          ..ssid = ssid
+          ..password = password,
+      );
+    }
+  }
 }
 
 class WifiConnectorExceptionCodes {

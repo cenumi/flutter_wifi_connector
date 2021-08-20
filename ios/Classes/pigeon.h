@@ -8,12 +8,19 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class WifiConfig;
+
+@interface WifiConfig : NSObject
+@property(nonatomic, copy, nullable) NSString * ssid;
+@property(nonatomic, copy, nullable) NSString * password;
+@end
 
 /// The codec used by NativeApi.
 NSObject<FlutterMessageCodec>* NativeApiGetCodec(void);
 
 @protocol NativeApi
 -(void)connect:(nullable NSString *)input completion:(void(^)(FlutterError *_Nullable))completion;
+-(void)secureConnect:(nullable WifiConfig *)input completion:(void(^)(FlutterError *_Nullable))completion;
 -(void)connectByPrefix:(nullable NSString *)input completion:(void(^)(FlutterError *_Nullable))completion;
 -(void)disconnect:(void(^)(FlutterError *_Nullable))completion;
 -(nullable NSString *)getSSID:(FlutterError *_Nullable *_Nonnull)error;
