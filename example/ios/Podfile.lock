@@ -1,0 +1,28 @@
+PODS:
+  - Flutter (1.0.0)
+  - "permission_handler (5.1.0+2)":
+    - Flutter
+  - wifi_connector (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - permission_handler (from `.symlinks/plugins/permission_handler/ios`)
+  - wifi_connector (from `.symlinks/plugins/wifi_connector/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  permission_handler:
+    :path: ".symlinks/plugins/permission_handler/ios"
+  wifi_connector:
+    :path: ".symlinks/plugins/wifi_connector/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
+  permission_handler: ccb20a9fad0ee9b1314a52b70b76b473c5f8dab0
+  wifi_connector: ef9afdc2dfd7863940d33a2298a53d214544dc6e
+
+PODFILE CHECKSUM: 41f896441e3c18ae3e9be40a676b78f4fdc12e2b
+
+COCOAPODS: 1.10.1

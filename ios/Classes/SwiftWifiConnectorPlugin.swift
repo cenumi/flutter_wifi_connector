@@ -1,0 +1,123 @@
+import Flutter
+import UIKit
+import NetworkExtension
+import SystemConfiguration.CaptiveNetwork
+
+public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, NativeApi{
+    
+    
+    
+    public static func register(with registrar: FlutterPluginRegistrar) {
+        NativeApiSetup(registrar.messenger(), SwiftWifiConnectorPlugin.init())
+    }
+    
+    public func connect(_ input: String?, completion: @escaping (FlutterError?) -> Void) {
+        
+    }
+    
+    public func connect(byPrefix input: String?, completion: @escaping (FlutterError?) -> Void) {
+        if #available(iOS 13.0, *) {
+            
+            guard let prefix = input else {
+                completion(FlutterError(code: "arguments required", message: nil, details: nil))
+                return
+            }
+            
+            
+            let hotspotConfig = NEHotspotConfiguration.init(ssidPrefix: prefix)
+            hotspotConfig.joinOnce = true
+            
+            NEHotspotConfigurationManager.shared.apply(hotspotConfig, completionHandler: { [weak self] (error) in
+                
+                
+                guard let err = error as NSError? else{
+                    guard let this = self else{
+                        completion(FlutterError(code: "500", message: "parse failed", details: error))
+                        return
+                    }
+                    
+                    guard let ssid = this.getSSID() else{
+                        completion(FlutterError(code: "404", message: "target wifi not found", details: nil))
+                        return
+                    }
+                    
+                    if ssid.hasPrefix(hotspotConfig.ssid) {
+                        completion(nil)
+                    }else{
+                        completion(FlutterError(code: "405", message: "already connected", details: "ssidPrefix != currendSsidPrefix"))
+                    }
+                    return
+                }
+                
+                switch err.code {
+                case NEHotspotConfigurationError.alreadyAssociated.rawValue:
+                    completion(nil)
+                    break
+                case NEHotspotConfigurationError.userDenied.rawValue:
+                    completion(FlutterError(code: "403", message: "permission denied", details: err))
+                    break
+                default:
+                    completion(FlutterError(code: "500", message: "system error" , details: err))
+                    break
+                }
+                
+            })
+        } else {
+            completion(FlutterError(code: "505", message: "iOS 13 above required", details: nil))
+        }
+    }
+    
+    public func disconnect(_ completion: @escaping (FlutterError?) -> Void) {
+        
+        if #available(iOS 13.0, *) {
+            let ssid = getSSID()
+            if ssid == nil{
+                completion(FlutterError(code: "not connected", message: nil, details: nil))
+                return
+            }
+            NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid ?? "")
+            completion(nil)
+        } else {
+            completion(FlutterError(code: "505", message: "iOS 13 above required", details: nil))
+        }
+    }
+    
+    public func getSSID(_ error: AutoreleasingUnsafeMutablePointer<FlutterError?>) -> String? {
+        
+        guard let ssid = getSSID() else {
+            error.pointee = FlutterError(code: "404", message: "target wifi not found", details: nil)
+            return nil
+        }
+        
+        return ssid
+    }
+    
+    
+    private func getSSID() -> String?{
+        var ssid: String?
+        if let interfaces = CNCopySupportedInterfaces() as NSArray? {
+            for interface in interfaces {
+                if let interfaceInfo = CNCopyCurrentNetworkInfo(interface as! CFString) as NSDictionary? {
+                    ssid = interfaceInfo[kCNNetworkInfoKeySSID as String] as? String
+                    break
+                }
+            }
+        }
+        return ssid
+    }
+    
+    public func getGatewayIP(_ error: AutoreleasingUnsafeMutablePointer<FlutterError?>) -> String? {
+        var gatewayAddr = in_addr()
+        
+        let result = getDefaultGateway(&(gatewayAddr.s_addr))
+        
+        if(result >= 0){
+            return String(cString: inet_ntoa(gatewayAddr))
+        }else{
+            error.pointee = FlutterError(code: "500", message: "convert failed", details: nil)
+            return nil
+        }
+    }
+}
+
+
