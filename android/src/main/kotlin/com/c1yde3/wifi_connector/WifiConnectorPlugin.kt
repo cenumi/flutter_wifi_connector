@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PatternMatcher
+import android.util.Log
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
 import com.c1yde3.wifi_connector.Pigeon.*
@@ -171,7 +172,8 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
         connectivityManager.requestNetwork(
             request,
             networkCallback!!,
-            Handler(Looper.getMainLooper())
+            Handler(Looper.getMainLooper()),
+            30000
         )
     }
 

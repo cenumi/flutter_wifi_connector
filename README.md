@@ -2,12 +2,20 @@
 
 This plugin allows Flutter apps to use wifi functionality on Android / iOS, and fetch infomation related.
 
+## Requirements
 
+### iOS
+
+iOS 13 above
+
+Capabilities needed
+
+- Assess WiFi information
+- Hotspot Configuration
 
 ## Attention
 
-`connect(String ssid)` is not implemented yet  
-use `connectByPrefix(String ssidPrefix)` instead
+this package uses custom pigeon code generator to generate platform code.
 
 ## Usage
 
@@ -20,7 +28,7 @@ Future<void> func() async {
   final wifi = WifiConnector();
 
   await Permission.locaion.request();
-  
+
   await wifi.connectByPrefix('prefix');
 
   final ssid = await wifi.getSSID();
@@ -43,16 +51,6 @@ class WifiConnectorExceptionCodes {
 
 ```
 
-## Requirements
-
-### iOS
-
-iOS 13 above
-
-Capabilities needed
-
-- Assess WiFi information
-- Hotspot Configuration
 
 
 

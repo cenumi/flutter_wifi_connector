@@ -7,18 +7,24 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.0.3] - 2021-08-23
+
+### Added
+
+- Add 30000ms connnect timeout
+
 ## [0.0.2] - 2021-08-20
 
 ### Added
 
-- connect(String ssid, [String? password])
-- scureConnect(String ssid, String password)
+- `connect(String ssid, [String? password])`
+- `scureConnect(String ssid, String password)`
 
 ## [0.0.1] - 2021-08-20
 
 ### Added
 
-- connectByPrefix(String prefix)
-- disconnect()
-- getSSID()
-- getGatewayIP()
+- `connectByPrefix(String prefix)`
+- `disconnect()`
+- `getSSID()`
+- `getGatewayIP()`
