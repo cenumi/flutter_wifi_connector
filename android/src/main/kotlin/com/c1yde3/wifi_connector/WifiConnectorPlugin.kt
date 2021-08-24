@@ -37,7 +37,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
         applicationContext.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     }
 
-    var networkId: Int? = null
+    private var networkId: Int? = null
 
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -89,15 +89,15 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
 
     override fun getSSID(): String = wifiManager.connectionInfo.ssid
 
-    override fun getGatewayIP(): String {
-        val gateway = wifiManager.dhcpInfo.gateway
-        return String.format(
-            "%d.%d.%d.%d", gateway and 0xFF,
-            gateway shr 8 and 0xFF,
-            gateway shr 16 and 0xFF,
-            gateway shr 24 and 0xFF
-        )
-    }
+//    override fun getGatewayIP(): String {
+//        val gateway = wifiManager.dhcpInfo.gateway
+//        return String.format(
+//            "%d.%d.%d.%d", gateway and 0xFF,
+//            gateway shr 8 and 0xFF,
+//            gateway shr 16 and 0xFF,
+//            gateway shr 24 and 0xFF
+//        )
+//    }
 
     @Suppress("DEPRECATION")
     private fun createWifiConfig() = WifiConfiguration().apply {
@@ -137,7 +137,8 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
         val specifier = WifiNetworkSpecifier.Builder().apply {
             setSsid(ssid)
             if (password != null) {
-                setWpa3Passphrase(password)
+//                setWpa3Passphrase(password)
+                setWpa2Passphrase(password)
             }
         }.build()
         connectAboveQ(specifier, result)
@@ -159,21 +160,24 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
 
         networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                super.onAvailable(network)
                 connectivityManager.bindProcessToNetwork(network)
                 result.success(null)
             }
 
             override fun onUnavailable() {
-                super.onUnavailable()
-                result.error("404", "target wifi not found", "NetworkCallback.onUnavailable()")
+                result.error(
+                    "404",
+                    "target wifi not found or user cancels connecting",
+                    "NetworkCallback.onUnavailable()"
+                )
+                networkCallback = null
             }
         }
+
         connectivityManager.requestNetwork(
             request,
             networkCallback!!,
             Handler(Looper.getMainLooper()),
-            30000
         )
     }
 
@@ -238,7 +242,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
                     result.error(
                         "409",
                         "already connected",
-                        "multiple callback in NETWORK_STATE_CHANGED_ACTION broadcast receiver"
+                        "multiple calls in NETWORK_STATE_CHANGED_ACTION broadcast receiver"
                     )
                     context?.unregisterReceiver(this)
                 }

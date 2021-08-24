@@ -7,6 +7,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.0.4] - 2021-08-24
+
+### Remove
+
+- `getGatewayIp()` unstable on iOS
+
 ## [0.0.3] - 2021-08-23
 
 ### Added

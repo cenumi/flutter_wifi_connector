@@ -24,7 +24,6 @@ NSObject<FlutterMessageCodec>* NativeApiGetCodec(void);
 -(void)connectByPrefix:(nullable NSString *)input completion:(void(^)(FlutterError *_Nullable))completion;
 -(void)disconnect:(void(^)(FlutterError *_Nullable))completion;
 -(nullable NSString *)getSSID:(FlutterError *_Nullable *_Nonnull)error;
--(nullable NSString *)getGatewayIP:(FlutterError *_Nullable *_Nonnull)error;
 @end
 
 extern void NativeApiSetup(id<FlutterBinaryMessenger> binaryMessenger, id<NativeApi> _Nullable api);

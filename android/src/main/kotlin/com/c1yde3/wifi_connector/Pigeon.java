@@ -80,7 +80,6 @@ public class Pigeon {
     void connectByPrefix(String arg, Result<Void> result);
     void disconnect(Result<Void> result);
     String getSSID();
-    String getGatewayIP();
 
     /** The codec used by NativeApi. */
     static MessageCodec<Object> getCodec() {
@@ -232,25 +231,6 @@ public class Pigeon {
             Map<String, Object> wrapped = new HashMap<>();
             try {
               String output = api.getSSID();
-              wrapped.put("result", output);
-            }
-            catch (Error | RuntimeException exception) {
-              wrapped.put("error", wrapError(exception));
-            }
-            reply.reply(wrapped);
-          });
-        } else {
-          channel.setMessageHandler(null);
-        }
-      }
-      {
-        BasicMessageChannel<Object> channel =
-            new BasicMessageChannel<>(binaryMessenger, "dev.flutter.pigeon.NativeApi.getGatewayIP", getCodec());
-        if (api != null) {
-          channel.setMessageHandler((message, reply) -> {
-            Map<String, Object> wrapped = new HashMap<>();
-            try {
-              String output = api.getGatewayIP();
               wrapped.put("result", output);
             }
             catch (Error | RuntimeException exception) {

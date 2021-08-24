@@ -21,6 +21,7 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, NativeApi{
         guard let ssid  = input?.ssid else { return }
         guard let password = input?.password else { return }
         let hotspotConfig = NEHotspotConfiguration.init(ssid: ssid, passphrase: password, isWEP: false)
+        
         connect(hotspotConfig: hotspotConfig, completion: completion)
     }
     
@@ -36,7 +37,9 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, NativeApi{
     }
     
     private func connect(hotspotConfig:NEHotspotConfiguration,completion: @escaping (FlutterError?) -> Void){
+
         hotspotConfig.joinOnce = true
+
         NEHotspotConfigurationManager.shared.apply(hotspotConfig, completionHandler: { [weak self] (error) in
             
             guard let err = error as NSError? else{
@@ -115,18 +118,4 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, NativeApi{
         return ssid
     }
     
-    public func getGatewayIP(_ error: AutoreleasingUnsafeMutablePointer<FlutterError?>) -> String? {
-        var gatewayAddr = in_addr()
-        
-        let result = getDefaultGateway(&(gatewayAddr.s_addr))
-        
-        if(result >= 0){
-            return String(cString: inet_ntoa(gatewayAddr))
-        }else{
-            error.pointee = FlutterError(code: "500", message: "convert failed", details: nil)
-            return nil
-        }
-    }
 }
-
-

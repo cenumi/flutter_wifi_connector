@@ -20,7 +20,6 @@ class _MyAppState extends State<MyApp> {
 
   String? _ssid;
 
-  String? _gateway;
 
   @override
   void initState() {
@@ -43,7 +42,6 @@ class _MyAppState extends State<MyApp> {
           children: [
             Text('SSID Prefix: $_prefix'),
             Text('Current SSID: $_ssid'),
-            Text('Gateway IP: $_gateway'),
             TextField(
               decoration: InputDecoration(hintText: 'please input the ssid prefix'),
               onChanged: (s) => _ssidPrefix = s,
@@ -69,17 +67,6 @@ class _MyAppState extends State<MyApp> {
                 }
               },
               child: Text('Fetch SSID'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final gateway = await WifiConnector().getGatewayIP();
-                if (mounted) {
-                  setState(() {
-                    _gateway = gateway;
-                  });
-                }
-              },
-              child: Text('Fetch Gateway IP'),
             ),
             ElevatedButton(
               onPressed: () => WifiConnector().disconnect(),

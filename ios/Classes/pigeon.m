@@ -187,21 +187,4 @@ void NativeApiSetup(id<FlutterBinaryMessenger> binaryMessenger, id<NativeApi> ap
       [channel setMessageHandler:nil];
     }
   }
-  {
-    FlutterBasicMessageChannel *channel =
-      [FlutterBasicMessageChannel
-        messageChannelWithName:@"dev.flutter.pigeon.NativeApi.getGatewayIP"
-        binaryMessenger:binaryMessenger
-        codec:NativeApiGetCodec()];
-    if (api) {
-      [channel setMessageHandler:^(id _Nullable message, FlutterReply callback) {
-        FlutterError *error;
-        NSString *output = [api getGatewayIP:&error];
-        callback(wrapResult(output, error));
-      }];
-    }
-    else {
-      [channel setMessageHandler:nil];
-    }
-  }
 }

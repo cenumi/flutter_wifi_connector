@@ -21,5 +21,4 @@ abstract class NativeApi {
 
   String getSSID();
 
-  String getGatewayIP();
 }
