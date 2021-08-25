@@ -39,12 +39,13 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, NativeApi{
     private func connect(hotspotConfig:NEHotspotConfiguration,completion: @escaping (FlutterError?) -> Void){
 
         hotspotConfig.joinOnce = true
-
+        
+       
         NEHotspotConfigurationManager.shared.apply(hotspotConfig, completionHandler: { [weak self] (error) in
             
             guard let err = error as NSError? else{
                 guard let this = self else{
-                    completion(FlutterError(code: "500", message: "parse failed", details: error))
+                    completion(FlutterError(code: "500", message: "parse failed", details: error?.localizedDescription))
                     return
                 }
                 
@@ -66,10 +67,10 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, NativeApi{
                 completion(nil)
                 break
             case NEHotspotConfigurationError.userDenied.rawValue:
-                completion(FlutterError(code: "403", message: "permission denied", details: err))
+                completion(FlutterError(code: "403", message: "permission denied", details: err.description))
                 break
             default:
-                completion(FlutterError(code: "500", message: "system error" , details: err))
+                completion(FlutterError(code: "500", message: "system error" , details: err.description))
                 break
             }
             
@@ -117,5 +118,6 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, NativeApi{
         }
         return ssid
     }
-    
+
 }
+

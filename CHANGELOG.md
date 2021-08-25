@@ -7,6 +7,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.0.5] - 2021-08-24
+
+### Fixed
+
+- 错误传递传递对象不支持
+
 ## [0.0.4] - 2021-08-24
 
 ### Remove
