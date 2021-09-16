@@ -7,34 +7,30 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.0.5] - 2021-08-24
+## [0.1.0] - 2021-09-16
 
-### Fixed
+- upgrade pigeon
+- better error handling
+- change function signature
+
+## [0.0.5] - 2021-08-24
 
 - 错误传递传递对象不支持
 
 ## [0.0.4] - 2021-08-24
 
-### Remove
-
-- `getGatewayIp()` unstable on iOS
+- remove `getGatewayIp()` beacuse of instability on iOS
 
 ## [0.0.3] - 2021-08-23
-
-### Added
 
 - Add 30000ms connnect timeout
 
 ## [0.0.2] - 2021-08-20
 
-### Added
-
 - `connect(String ssid, [String? password])`
 - `scureConnect(String ssid, String password)`
 
 ## [0.0.1] - 2021-08-20
-
-### Added
 
 - `connectByPrefix(String prefix)`
 - `disconnect()`

@@ -3,110 +3,54 @@ import UIKit
 import NetworkExtension
 import SystemConfiguration.CaptiveNetwork
 
-public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, NativeApi{
-    
-    
-    
-    public static func register(with registrar: FlutterPluginRegistrar) {
-        NativeApiSetup(registrar.messenger(), SwiftWifiConnectorPlugin.init())
-    }
-    
-    public func connect(_ input: String?, completion: @escaping (FlutterError?) -> Void) {
-        guard let ssid = input else {return}
-        let hotspotConfig = NEHotspotConfiguration.init(ssid: ssid)
-        connect(hotspotConfig: hotspotConfig, completion: completion)
-    }
-    
-    public func secureConnect(_ input: WifiConfig?, completion: @escaping (FlutterError?) -> Void) {
-        guard let ssid  = input?.ssid else { return }
-        guard let password = input?.password else { return }
-        let hotspotConfig = NEHotspotConfiguration.init(ssid: ssid, passphrase: password, isWEP: false)
-        
-        connect(hotspotConfig: hotspotConfig, completion: completion)
-    }
-    
-    public func connect(byPrefix input: String?, completion: @escaping (FlutterError?) -> Void) {
-        if #available(iOS 13.0, *) {
-            guard let prefix = input else { return }
-            let hotspotConfig = NEHotspotConfiguration.init(ssidPrefix: prefix)
-            connect(hotspotConfig: hotspotConfig, completion: completion)
-        }else{
-            completion(FlutterError(code: "505", message: "iOS 13 above required", details: nil))
-        }
-        
-    }
-    
-    private func connect(hotspotConfig:NEHotspotConfiguration,completion: @escaping (FlutterError?) -> Void){
+public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, WifiConnectorHostApiBridge {
 
-        hotspotConfig.joinOnce = true
-        
-       
-        NEHotspotConfigurationManager.shared.apply(hotspotConfig, completionHandler: { [weak self] (error) in
-            
-            guard let err = error as NSError? else{
-                guard let this = self else{
-                    completion(FlutterError(code: "500", message: "parse failed", details: error?.localizedDescription))
-                    return
-                }
-                
-                guard let ssid = this.getSSID() else{
-                    completion(FlutterError(code: "404", message: "target wifi not found", details: nil))
-                    return
-                }
-                
-                if ssid.hasPrefix(hotspotConfig.ssid) {
-                    completion(nil)
-                }else{
-                    completion(FlutterError(code: "405", message: "already connected", details: "ssidPrefix != currendSsidPrefix"))
-                }
-                return
-            }
-            
-            switch err.code {
-            case NEHotspotConfigurationError.alreadyAssociated.rawValue:
-                completion(nil)
-                break
-            case NEHotspotConfigurationError.userDenied.rawValue:
-                completion(FlutterError(code: "403", message: "permission denied", details: err.description))
-                break
-            default:
-                completion(FlutterError(code: "500", message: "system error" , details: err.description))
-                break
-            }
-            
-        })
-        
-        
+
+    public static func register(with registrar: FlutterPluginRegistrar) {
+        WifiConnectorHostApiBridgeSetup(registrar.messenger(), SwiftWifiConnectorPlugin())
     }
-    
-    
-    public func disconnect(_ completion: @escaping (FlutterError?) -> Void) {
-        
-        if #available(iOS 13.0, *) {
-            let ssid = getSSID()
-            if ssid == nil{
-                completion(FlutterError(code: "not connected", message: nil, details: nil))
-                return
-            }
-            NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid ?? "")
-            completion(nil)
-        } else {
-            completion(FlutterError(code: "505", message: "iOS 13 above required", details: nil))
+
+
+    public func connect(byPrefixSsidPrefix ssidPrefix: String?, completion: @escaping (FlutterError?) -> Void) {
+        guard let ssidPrefix = ssidPrefix else {
+            return
         }
+        let hotspotConfig = NEHotspotConfiguration(ssidPrefix: ssidPrefix)
+        connect(hotspotConfig: hotspotConfig, completion: completion)
     }
-    
-    public func getSSID(_ error: AutoreleasingUnsafeMutablePointer<FlutterError?>) -> String? {
-        
-        guard let ssid = getSSID() else {
-            error.pointee = FlutterError(code: "404", message: "target wifi not found", details: nil)
-            return nil
+
+
+    public func connectSsid(_ ssid: String?, completion: @escaping (FlutterError?) -> Void) {
+        guard let ssid = ssid else {
+            return
         }
-        
-        return ssid
+        let hotspotConfig = NEHotspotConfiguration(ssid: ssid)
+        connect(hotspotConfig: hotspotConfig, completion: completion)
     }
-    
-    
-    private func getSSID() -> String?{
+
+    public func secureConnectSsid(_ ssid: String?, password: String?, completion: @escaping (FlutterError?) -> Void) {
+        guard let ssid = ssid, let password = password else {
+            return
+        }
+
+        let hotspotConfig = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
+        connect(hotspotConfig: hotspotConfig, completion: completion)
+    }
+
+    public func disconnect(completion: @escaping (FlutterError?) -> Void) {
+        var error: FlutterError?
+
+        guard let ssid = getSSIDWithError(&error) else {
+            completion(error)
+            return
+        }
+
+        NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
+
+    }
+
+
+    public func getSSIDWithError(_ error: AutoreleasingUnsafeMutablePointer<FlutterError?>) -> String? {
         var ssid: String?
         if let interfaces = CNCopySupportedInterfaces() as NSArray? {
             for interface in interfaces {
@@ -116,8 +60,75 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, NativeApi{
                 }
             }
         }
+        if ssid == nil {
+            error.pointee = NotFoundException(message: "no such ssid in interfaces")
+        }
         return ssid
     }
 
-}
 
+    private func connect(hotspotConfig: NEHotspotConfiguration, completion: @escaping (FlutterError?) -> Void) {
+
+        hotspotConfig.joinOnce = true
+
+
+        NEHotspotConfigurationManager.shared.apply(hotspotConfig, completionHandler: { [weak self] (error) in
+            var flutterError: FlutterError?
+
+            guard let err = error as NSError? else {
+                guard let this = self else {
+                    return
+                }
+
+                guard let ssid = this.getSSIDWithError(&flutterError) else {
+                    completion(flutterError)
+                    return
+                }
+
+                if ssid.hasPrefix(hotspotConfig.ssid) {
+                    completion(nil)
+                } else {
+                    completion(AlreadyConnectedException(message: "ssid prefix != currentSsidPrefix"))
+                }
+                return
+            }
+
+            switch err.code {
+            case NEHotspotConfigurationError.alreadyAssociated.rawValue:
+                completion(nil)
+                break
+            case NEHotspotConfigurationError.userDenied.rawValue:
+                completion(PermissionDeniedException(message: "user denied"))
+                break
+            default:
+                completion(FlutterError(code: "unknown", message: "unknown err.code", details: err.description))
+                break
+            }
+        })
+    }
+
+
+    class AlreadyConnectedException: FlutterError {
+        convenience init(message: String) {
+            self.init(code: type(of: self).description(), message: message, details: nil)
+        }
+    }
+
+    class NotFoundException: FlutterError {
+        convenience init(message: String) {
+            self.init(code: type(of: self).description(), message: message, details: nil)
+        }
+    }
+
+    class NotConnectedException: FlutterError {
+        convenience init(message: String) {
+            self.init(code: type(of: self).description(), message: message, details: nil)
+        }
+    }
+
+    class PermissionDeniedException: FlutterError {
+        convenience init(message: String) {
+            self.init(code: type(of: self).description(), message: message, details: nil)
+        }
+    }
+}

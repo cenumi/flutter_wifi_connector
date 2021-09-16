@@ -19,10 +19,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/wifi_connector/ios"
 
 SPEC CHECKSUMS:
-  Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
+  Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
   permission_handler: ccb20a9fad0ee9b1314a52b70b76b473c5f8dab0
-  wifi_connector: ef9afdc2dfd7863940d33a2298a53d214544dc6e
+  wifi_connector: 011e687a13ece1d6ba8416ddde97ac7f00ca03f0
 
-PODFILE CHECKSUM: 41f896441e3c18ae3e9be40a676b78f4fdc12e2b
+PODFILE CHECKSUM: b373ffade7dbfe3b2582743c93dbcb3a12b324f4
 
-COCOAPODS: 1.10.1
+COCOAPODS: 1.11.0

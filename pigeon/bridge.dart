@@ -1,17 +1,12 @@
 import 'package:pigeon/pigeon.dart';
 
-class WifiConfig{
-  String? ssid;
-  String? password;
-}
-
 @HostApi()
-abstract class NativeApi {
+abstract class WifiConnectorHostApiBridge {
   @async
   void connect(String ssid);
 
   @async
-  void secureConnect(WifiConfig config);
+  void secureConnect(String ssid, String password);
 
   @async
   void connectByPrefix(String ssidPrefix);
@@ -20,5 +15,4 @@ abstract class NativeApi {
   void disconnect();
 
   String getSSID();
-
 }

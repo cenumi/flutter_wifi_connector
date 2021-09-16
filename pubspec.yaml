@@ -1,6 +1,6 @@
 name: wifi_connector
 description: wifi_connector
-version: 0.0.5
+version: 0.1.0
 homepage:
 
 environment:
@@ -16,11 +16,7 @@ dev_dependencies:
     sdk: flutter
 
   # https://pub.dev/packages/pigeon
-  pigeon:
-    git:
-      url: https://github.com/cenumi/packages.git
-      path: packages/pigeon
-
+  pigeon: ^1.0.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -12,17 +12,16 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PatternMatcher
-import android.util.Log
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
-import com.c1yde3.wifi_connector.Pigeon.*
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 
+import com.c1yde3.wifi_connector.Bridge.*
+
 
 /** WifiConnectorPlugin */
-class WifiConnectorPlugin : FlutterPlugin, NativeApi {
-
+class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
 
     private lateinit var applicationContext: Context
 
@@ -30,23 +29,22 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
         applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
 
-    private var networkCallback: ConnectivityManager.NetworkCallback? = null
-
-
     private val wifiManager: WifiManager by lazy(LazyThreadSafetyMode.NONE) {
         applicationContext.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     }
+
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     private var networkId: Int? = null
 
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        NativeApi.setup(flutterPluginBinding.binaryMessenger, this)
+        WifiConnectorHostApiBridge.setup(flutterPluginBinding.binaryMessenger, this)
         applicationContext = flutterPluginBinding.applicationContext
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        NativeApi.setup(binding.binaryMessenger, null)
+        WifiConnectorHostApiBridge.setup(binding.binaryMessenger, null)
 
         if (networkCallback != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             connectivityManager.unregisterNetworkCallback(networkCallback!!)
@@ -60,14 +58,14 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
         } else {
             connectUnderQ(arg, null, result)
         }
-
     }
 
-    override fun secureConnect(arg: WifiConfig, result: Result<Void>) {
+
+    override fun secureConnect(ssid: String, password: String, result: Result<Void>) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            connectAboveQ(arg.ssid, arg.password, result)
+            connectAboveQ(ssid, password, result)
         } else {
-            connectUnderQ(arg.ssid, arg.password, result)
+            connectUnderQ(ssid, password, result)
         }
     }
 
@@ -136,10 +134,10 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
     private fun connectAboveQ(ssid: String, password: String?, result: Result<Void>) {
         val specifier = WifiNetworkSpecifier.Builder().apply {
             setSsid(ssid)
-            if (password != null) {
-//                setWpa3Passphrase(password)
-                setWpa2Passphrase(password)
+            password?.run {
+                setWpa2Passphrase(this)
             }
+
         }.build()
         connectAboveQ(specifier, result)
     }
@@ -157,7 +155,6 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
             .setNetworkSpecifier(specifier)
             .build()
 
-
         networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 connectivityManager.bindProcessToNetwork(network)
@@ -165,11 +162,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
             }
 
             override fun onUnavailable() {
-                result.error(
-                    "404",
-                    "target wifi not found or user cancels connecting",
-                    "NetworkCallback.onUnavailable()"
-                )
+                result.error(NotFoundException("unavailable or user cancels"))
                 networkCallback = null
             }
         }
@@ -200,7 +193,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
                 if (ssid != null) {
                     connectUnderQ(createWifiConfig().apply { SSID = "\"$ssid\"" }, result)
                 } else {
-                    result.error("404", "target wifi not found", "nothing satisfied in scanResults")
+                    result.error(NotFoundException("nothing satisfied in scanResults"))
                 }
                 context?.unregisterReceiver(this)
             }
@@ -221,7 +214,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
 
         val network = wifiManager.addNetwork(conf)
         if (network == -1) {
-            result.error("404", "target wifi not found", "wifiManager.addNetwork(conf) returned -1")
+            result.error(NotFoundException("networkId == -1"))
             return
         }
 
@@ -239,11 +232,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
                     result.success(null)
                     context?.unregisterReceiver(this)
                 } else if (count > 2) {
-                    result.error(
-                        "409",
-                        "already connected",
-                        "multiple calls in NETWORK_STATE_CHANGED_ACTION broadcast receiver"
-                    )
+                    result.error(AlreadyConnectedException("multiple NETWORK_STATE_CHANGED_ACTION calls"))
                     context?.unregisterReceiver(this)
                 }
             }
@@ -259,7 +248,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun disconnectAboveQ(result: Result<Void>) {
         if (networkCallback == null) {
-            result.error("405", "not connected", "connect one first")
+            result.error(NotConnectedException("connect first"))
             return
         } else {
             connectivityManager.unregisterNetworkCallback(networkCallback!!)
@@ -272,7 +261,7 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
     @Suppress("DEPRECATION")
     private fun disconnectUnderQ(result: Result<Void>) {
         if (networkId == null) {
-            result.error("405", "not connected", "networkId == null")
+            result.error(NotConnectedException("networkId == null"))
             return
         }
 
@@ -296,5 +285,12 @@ class WifiConnectorPlugin : FlutterPlugin, NativeApi {
         networkId = null
     }
 
+    class AlreadyConnectedException(message: String) : Throwable(message)
+    class NotFoundException(message: String) : Throwable(message)
+    class NotConnectedException(message: String) : Throwable(message)
 }
+
+
+
+
 
