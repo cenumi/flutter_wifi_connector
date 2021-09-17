@@ -17,6 +17,7 @@ NSObject<FlutterMessageCodec> *WifiConnectorHostApiBridgeGetCodec(void);
 - (void)secureConnectSsid:(nullable NSString *)ssid password:(nullable NSString *)password completion:(void(^)(FlutterError *_Nullable))completion;
 - (void)connectByPrefixSsidPrefix:(nullable NSString *)ssidPrefix completion:(void(^)(FlutterError *_Nullable))completion;
 - (void)disconnectWithCompletion:(void(^)(FlutterError *_Nullable))completion;
+- (void)isEnabledWithCompletion:(void(^)(NSNumber *_Nullable, FlutterError *_Nullable))completion;
 - (nullable NSString *)getSSIDWithError:(FlutterError *_Nullable *_Nonnull)error;
 @end
 

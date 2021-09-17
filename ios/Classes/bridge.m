@@ -138,6 +138,24 @@ void WifiConnectorHostApiBridgeSetup(id<FlutterBinaryMessenger> binaryMessenger,
   {
     FlutterBasicMessageChannel *channel =
       [FlutterBasicMessageChannel
+        messageChannelWithName:@"dev.flutter.pigeon.WifiConnectorHostApiBridge.isEnabled"
+        binaryMessenger:binaryMessenger
+        codec:WifiConnectorHostApiBridgeGetCodec()];
+    if (api) {
+      NSCAssert([api respondsToSelector:@selector(isEnabledWithCompletion:)], @"WifiConnectorHostApiBridge api (%@) doesn't respond to @selector(isEnabledWithCompletion:)", api);
+      [channel setMessageHandler:^(id _Nullable message, FlutterReply callback) {
+        [api isEnabledWithCompletion:^(NSNumber *_Nullable output, FlutterError *_Nullable error) {
+          callback(wrapResult(output, error));
+        }];
+      }];
+    }
+    else {
+      [channel setMessageHandler:nil];
+    }
+  }
+  {
+    FlutterBasicMessageChannel *channel =
+      [FlutterBasicMessageChannel
         messageChannelWithName:@"dev.flutter.pigeon.WifiConnectorHostApiBridge.getSSID"
         binaryMessenger:binaryMessenger
         codec:WifiConnectorHostApiBridgeGetCodec()];

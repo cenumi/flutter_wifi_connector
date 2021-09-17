@@ -37,17 +37,6 @@ Future<void> func() async {
   await wifi.disconnect();
 }
 
-// Exceptions
-class WifiConnectorExceptionCodes {
-  WifiConnectorExceptionCodes._();
-
-  static const wifiNotFound = '404';
-  static const alreadyConnected = '409';
-  static const notConnected = '405';
-  static const permissionDenied = '403';
-  static const systemUpgradeRequired = '505';
-  static const systemError = '500';
-}
 
 ```
 

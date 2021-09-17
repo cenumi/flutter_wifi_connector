@@ -34,6 +34,7 @@ public class Bridge {
     void secureConnect(String ssid, String password, Result<Void> result);
     void connectByPrefix(String ssidPrefix, Result<Void> result);
     void disconnect(Result<Void> result);
+    void isEnabled(Result<Boolean> result);
     String getSSID();
 
     /** The codec used by WifiConnectorHostApiBridge. */
@@ -168,6 +169,35 @@ public class Bridge {
               };
 
               api.disconnect(resultCallback);
+            }
+            catch (Error | RuntimeException exception) {
+              wrapped.put("error", wrapError(exception));
+              reply.reply(wrapped);
+            }
+          });
+        } else {
+          channel.setMessageHandler(null);
+        }
+      }
+      {
+        BasicMessageChannel<Object> channel =
+            new BasicMessageChannel<>(binaryMessenger, "dev.flutter.pigeon.WifiConnectorHostApiBridge.isEnabled", getCodec());
+        if (api != null) {
+          channel.setMessageHandler((message, reply) -> {
+            Map<String, Object> wrapped = new HashMap<>();
+            try {
+              Result<Boolean> resultCallback = new Result<Boolean>() {
+                public void success(Boolean result) {
+                  wrapped.put("result", result);
+                  reply.reply(wrapped);
+                }
+                public void error(Throwable error) {
+                  wrapped.put("error", wrapError(error));
+                  reply.reply(wrapped);
+                }
+              };
+
+              api.isEnabled(resultCallback);
             }
             catch (Error | RuntimeException exception) {
               wrapped.put("error", wrapError(exception));
