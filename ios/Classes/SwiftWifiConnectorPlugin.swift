@@ -5,7 +5,6 @@ import SystemConfiguration.CaptiveNetwork
 
 public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, WifiConnectorHostApiBridge {
 
-
     public static func register(with registrar: FlutterPluginRegistrar) {
         WifiConnectorHostApiBridgeSetup(registrar.messenger(), SwiftWifiConnectorPlugin())
     }
@@ -103,32 +102,37 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, WifiConnectorHos
             default:
                 completion(FlutterError(code: "unknown", message: "unknown err.code", details: err.description))
                 break
+
             }
         })
+    }
+
+    public func isEnabledWithError(_ error: AutoreleasingUnsafeMutablePointer<FlutterError?>) -> NSNumber? {
+        true
     }
 
 
     class AlreadyConnectedException: FlutterError {
         convenience init(message: String) {
-            self.init(code: type(of: self).description(), message: message, details: nil)
+            self.init(code: "AlreadyConnectedException", message: message, details: nil)
         }
     }
 
     class NotFoundException: FlutterError {
         convenience init(message: String) {
-            self.init(code: type(of: self).description(), message: message, details: nil)
+            self.init(code: "NotFoundException", message: message, details: nil)
         }
     }
 
     class NotConnectedException: FlutterError {
         convenience init(message: String) {
-            self.init(code: type(of: self).description(), message: message, details: nil)
+            self.init(code: "NotConnectedException", message: message, details: nil)
         }
     }
 
     class PermissionDeniedException: FlutterError {
         convenience init(message: String) {
-            self.init(code: type(of: self).description(), message: message, details: nil)
+            self.init(code:"PermissionDeniedException", message: message, details: nil)
         }
     }
 }

@@ -5,10 +5,12 @@ import 'package:wifi_connector/wifi_connector.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   _MyAppState createState() => _MyAppState();
 }
@@ -27,7 +29,7 @@ class _MyAppState extends State<MyApp> {
 
     () async {
       final state = await Permission.locationWhenInUse.request();
-      print(state);
+      debugPrint(state.toString());
     }();
   }
 
@@ -43,7 +45,7 @@ class _MyAppState extends State<MyApp> {
             Text('SSID Prefix: $_prefix'),
             Text('Current SSID: $_ssid'),
             TextField(
-              decoration: InputDecoration(hintText: 'please input the ssid prefix'),
+              decoration: const InputDecoration(hintText: 'please input the ssid prefix'),
               onChanged: (s) => _ssidPrefix = s,
             ),
             ElevatedButton(
@@ -55,22 +57,22 @@ class _MyAppState extends State<MyApp> {
                   });
                 }
               },
-              child: Text('Connect'),
+              child: const Text('Connect'),
             ),
             ElevatedButton(
               onPressed: () async {
-                final ip = await WifiConnector().getSSID();
+                final ip = await WifiConnector().ssid;
                 if (mounted) {
                   setState(() {
                     _ssid = ip;
                   });
                 }
               },
-              child: Text('Fetch SSID'),
+              child: const Text('Fetch SSID'),
             ),
             ElevatedButton(
               onPressed: () => WifiConnector().disconnect(),
-              child: Text('Disconnect'),
+              child: const Text('Disconnect'),
             ),
           ],
         ),

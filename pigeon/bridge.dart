@@ -14,5 +14,7 @@ abstract class WifiConnectorHostApiBridge {
   @async
   void disconnect();
 
+  bool isEnabled();
+
   String getSSID();
 }

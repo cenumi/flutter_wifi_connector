@@ -85,6 +85,9 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
         }
     }
 
+    override fun isEnabled(): Boolean = wifiManager.isWifiEnabled
+
+
     override fun getSSID(): String = wifiManager.connectionInfo.ssid
 
 //    override fun getGatewayIP(): String {
