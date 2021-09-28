@@ -11,7 +11,7 @@ class WifiConnector {
 
   final _bridge = WifiConnectorHostApiBridge();
 
-  Future<void> connect(String ssid, {String? password}){
+  Future<void> connect(String ssid, {String? password}) {
     if (password != null) {
       return _bridge.secureConnect(ssid, password);
     }
@@ -27,14 +27,10 @@ class WifiConnector {
   Future<bool> get isWifiEnabled => _bridge.isEnabled();
 }
 
-class WifiConnectorErrorCode{
+class WifiConnectorErrorCode {
   WifiConnectorErrorCode._();
 
-  static const alreadyConnected = 'AlreadyConnectedException';
+  static const common = 'CommonException';
 
-  static const notFound = 'NotFoundException';
-
-  static const notConnected = 'NotConnectedException';
-
-  static const userDenied = 'PermissionDeniedException';
+  static const internal = 'InternalException';
 }

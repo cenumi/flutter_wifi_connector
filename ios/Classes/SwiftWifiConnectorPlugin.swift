@@ -33,6 +33,8 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, WifiConnectorHos
         }
 
         let hotspotConfig = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
+        
+
         connect(hotspotConfig: hotspotConfig, completion: completion)
     }
 
@@ -43,9 +45,8 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, WifiConnectorHos
             completion(error)
             return
         }
-
+        
         NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
-
     }
 
 
@@ -60,17 +61,15 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, WifiConnectorHos
             }
         }
         if ssid == nil {
-            error.pointee = NotFoundException(message: "no such ssid in interfaces")
+            error.pointee = CommonException(message: "no such ssid in interfaces")
         }
         return ssid
     }
 
 
     private func connect(hotspotConfig: NEHotspotConfiguration, completion: @escaping (FlutterError?) -> Void) {
-
         hotspotConfig.joinOnce = true
-
-
+    
         NEHotspotConfigurationManager.shared.apply(hotspotConfig, completionHandler: { [weak self] (error) in
             var flutterError: FlutterError?
 
@@ -87,7 +86,7 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, WifiConnectorHos
                 if ssid.hasPrefix(hotspotConfig.ssid) {
                     completion(nil)
                 } else {
-                    completion(AlreadyConnectedException(message: "ssid prefix != currentSsidPrefix"))
+                    completion(CommonException(message: "ssid prefix != currentSsidPrefix"))
                 }
                 return
             }
@@ -97,7 +96,7 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, WifiConnectorHos
                 completion(nil)
                 break
             case NEHotspotConfigurationError.userDenied.rawValue:
-                completion(PermissionDeniedException(message: "user denied"))
+                completion(CommonException(message: "user denied"))
                 break
             default:
                 completion(FlutterError(code: "unknown", message: "unknown err.code", details: err.description))
@@ -110,29 +109,17 @@ public class SwiftWifiConnectorPlugin: NSObject, FlutterPlugin, WifiConnectorHos
     public func isEnabledWithError(_ error: AutoreleasingUnsafeMutablePointer<FlutterError?>) -> NSNumber? {
         true
     }
-
-
-    class AlreadyConnectedException: FlutterError {
+    
+    class CommonException: FlutterError {
         convenience init(message: String) {
-            self.init(code: "AlreadyConnectedException", message: message, details: nil)
+            self.init(code: "CommonException", message: message, details: nil)
         }
     }
 
-    class NotFoundException: FlutterError {
-        convenience init(message: String) {
-            self.init(code: "NotFoundException", message: message, details: nil)
-        }
-    }
 
-    class NotConnectedException: FlutterError {
+    class InternalException: FlutterError {
         convenience init(message: String) {
-            self.init(code: "NotConnectedException", message: message, details: nil)
-        }
-    }
-
-    class PermissionDeniedException: FlutterError {
-        convenience init(message: String) {
-            self.init(code:"PermissionDeniedException", message: message, details: nil)
+            self.init(code:"InternalException", message: message, details: nil)
         }
     }
 }

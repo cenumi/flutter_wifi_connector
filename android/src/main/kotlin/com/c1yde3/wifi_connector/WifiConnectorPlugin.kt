@@ -18,6 +18,7 @@ import androidx.annotation.RequiresApi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 
 import com.c1yde3.wifi_connector.Bridge.*
+import kotlin.jvm.Throws
 
 
 /** WifiConnectorPlugin */
@@ -165,7 +166,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
             }
 
             override fun onUnavailable() {
-                result.error(NotFoundException("unavailable or user cancels"))
+                result.error(CommonException("unavailable or user cancels"))
                 networkCallback = null
             }
         }
@@ -196,7 +197,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
                 if (ssid != null) {
                     connectUnderQ(createWifiConfig().apply { SSID = "\"$ssid\"" }, result)
                 } else {
-                    result.error(NotFoundException("nothing satisfied in scanResults"))
+                    result.error(CommonException("nothing satisfied in scanResults"))
                 }
                 context?.unregisterReceiver(this)
             }
@@ -217,7 +218,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
 
         val network = wifiManager.addNetwork(conf)
         if (network == -1) {
-            result.error(NotFoundException("networkId == -1"))
+            result.error(InternalException("networkId == -1"))
             return
         }
 
@@ -235,7 +236,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
                     result.success(null)
                     context?.unregisterReceiver(this)
                 } else if (count > 2) {
-                    result.error(AlreadyConnectedException("multiple NETWORK_STATE_CHANGED_ACTION calls"))
+                    result.error(CommonException("multiple NETWORK_STATE_CHANGED_ACTION calls"))
                     context?.unregisterReceiver(this)
                 }
             }
@@ -251,7 +252,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun disconnectAboveQ(result: Result<Void>) {
         if (networkCallback == null) {
-            result.error(NotConnectedException("connect first"))
+            result.error(CommonException("connect first"))
             return
         } else {
             connectivityManager.unregisterNetworkCallback(networkCallback!!)
@@ -264,7 +265,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
     @Suppress("DEPRECATION")
     private fun disconnectUnderQ(result: Result<Void>) {
         if (networkId == null) {
-            result.error(NotConnectedException("networkId == null"))
+            result.error(CommonException("networkId == null"))
             return
         }
 
@@ -288,9 +289,9 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
         networkId = null
     }
 
-    class AlreadyConnectedException(message: String) : Throwable(message)
-    class NotFoundException(message: String) : Throwable(message)
-    class NotConnectedException(message: String) : Throwable(message)
+    class CommonException(message: String) : Throwable(message)
+    class InternalException(message: String) : Throwable(message)
+
 }
 
 
