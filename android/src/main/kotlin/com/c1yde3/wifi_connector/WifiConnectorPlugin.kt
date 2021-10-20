@@ -45,7 +45,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        WifiConnectorHostApiBridge.setup(binding.binaryMessenger, null)
+        WifiConnectorHostApiBridge.setup(null, null)
 
         if (networkCallback != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             connectivityManager.unregisterNetworkCallback(networkCallback!!)
