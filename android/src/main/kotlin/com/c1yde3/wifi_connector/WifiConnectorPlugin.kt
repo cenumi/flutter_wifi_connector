@@ -18,7 +18,6 @@ import androidx.annotation.RequiresApi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 
 import com.c1yde3.wifi_connector.Bridge.*
-import kotlin.jvm.Throws
 
 
 /** WifiConnectorPlugin */
@@ -45,7 +44,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        WifiConnectorHostApiBridge.setup(null, null)
+        WifiConnectorHostApiBridge.setup(binding.binaryMessenger, null)
 
         if (networkCallback != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             connectivityManager.unregisterNetworkCallback(networkCallback!!)
