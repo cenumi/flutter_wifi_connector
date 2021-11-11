@@ -175,8 +175,9 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
                     result.error(CommonException("unavailable or user cancels"))
                 }
                 submitted = true
-                networkCallback = null
+                connectivityManager.bindProcessToNetwork(null)
                 connectivityManager.unregisterNetworkCallback(this)
+                networkCallback = null
             }
         }
 
@@ -185,6 +186,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
             networkCallback!!,
             Handler(Looper.getMainLooper()),
         )
+
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
