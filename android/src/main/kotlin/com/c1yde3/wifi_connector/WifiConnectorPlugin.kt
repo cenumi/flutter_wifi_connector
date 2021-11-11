@@ -159,13 +159,22 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
             .build()
 
         networkCallback = object : ConnectivityManager.NetworkCallback() {
+
+            var submitted = false
             override fun onAvailable(network: Network) {
                 connectivityManager.bindProcessToNetwork(network)
-                result.success(null)
+                if (!submitted) {
+                    result.success(null)
+                }
+                submitted = true
+
             }
 
             override fun onUnavailable() {
-                result.error(CommonException("unavailable or user cancels"))
+                if (!submitted) {
+                    result.error(CommonException("unavailable or user cancels"))
+                }
+                submitted = true
                 networkCallback = null
                 connectivityManager.unregisterNetworkCallback(this)
             }
