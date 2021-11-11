@@ -167,6 +167,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
             override fun onUnavailable() {
                 result.error(CommonException("unavailable or user cancels"))
                 networkCallback = null
+                connectivityManager.unregisterNetworkCallback(this)
             }
         }
 
