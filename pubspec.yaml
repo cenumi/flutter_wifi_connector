@@ -11,12 +11,14 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_plugin_android_lifecycle: ^2.0.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   # https://pub.dev/packages/pigeon
-  pigeon: ^1.0.7
+  pigeon: ^1.0.12
 
   flutter_lints: ^1.0.4
 

@@ -12,18 +12,25 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PatternMatcher
+import android.util.Log
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.Lifecycle
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 
 import com.c1yde3.wifi_connector.Bridge.*
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.embedding.engine.plugins.lifecycle.FlutterLifecycleAdapter
+import kotlin.concurrent.thread
 
 
 /** WifiConnectorPlugin */
-class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
+class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge, ActivityAware {
 
     private lateinit var applicationContext: Context
+    private lateinit var activityBinding: ActivityPluginBinding
 
     private val connectivityManager: ConnectivityManager by lazy(LazyThreadSafetyMode.NONE) {
         applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -51,6 +58,20 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
             networkCallback = null
         }
     }
+
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        activityBinding = binding
+    }
+
+    override fun onDetachedFromActivityForConfigChanges() {
+    }
+
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+    }
+
+    override fun onDetachedFromActivity() {
+    }
+
 
     override fun connect(arg: String, result: Result<Void>) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -100,6 +121,103 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
 //        )
 //    }
 
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun connectByPrefixAboveQ(arg: String, result: Result<Void>) {
+        val specifier = WifiNetworkSpecifier.Builder()
+            .setSsidPattern(PatternMatcher(arg, PatternMatcher.PATTERN_PREFIX))
+            .build()
+        connectAboveQ(specifier, result)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun connectAboveQ(ssid: String, password: String?, result: Result<Void>) {
+        val specifier = WifiNetworkSpecifier.Builder().apply {
+            setSsid(ssid)
+            password?.run {
+                setWpa2Passphrase(this)
+            }
+
+        }.build()
+        connectAboveQ(specifier, result)
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun connectAboveQ(specifier: WifiNetworkSpecifier, result: Result<Void>) {
+
+        if (networkCallback != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback!!)
+            networkCallback = null
+        }
+
+        val request = NetworkRequest.Builder()
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .setNetworkSpecifier(specifier)
+            .build()
+
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+
+            var replyed = false
+
+            override fun onAvailable(network: Network) {
+                thread {
+                    val lifecycle = FlutterLifecycleAdapter.getActivityLifecycle(activityBinding)
+                    Log.d("CALLBACK", "onAvailable ${lifecycle.currentState}")
+
+                    Thread.sleep(200)
+                    if (lifecycle.currentState != Lifecycle.State.RESUMED) {
+                        connectivityManager.unregisterNetworkCallback(this)
+                        activityBinding.activity.runOnUiThread {
+                            result.error(InternalException("System Error"))
+                        }
+                    } else {
+                        connectivityManager.bindProcessToNetwork(network)
+                        activityBinding.activity.runOnUiThread {
+                            result.success(null)
+                        }
+                    }
+                }
+
+                replyed = true
+            }
+
+            override fun onUnavailable() {
+                Log.d("CALLBACK", "onUnavailable")
+                if (!replyed) {
+                    result.error(CommonException("unavailable or user cancels"))
+                }
+                connectivityManager.unregisterNetworkCallback(this)
+            }
+
+            override fun onLost(network: Network) {
+                Log.d("CALLBACK", "onLost")
+                connectivityManager.bindProcessToNetwork(null)
+                connectivityManager.unregisterNetworkCallback(this)
+            }
+        }
+
+        connectivityManager.requestNetwork(
+            request,
+            networkCallback!!,
+            Handler(Looper.getMainLooper()),
+        )
+
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun disconnectAboveQ(result: Result<Void>) {
+        connectivityManager.bindProcessToNetwork(null)
+        if (networkCallback != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback!!)
+            networkCallback = null
+        }
+        result.success(null)
+    }
+
+
     @Suppress("DEPRECATION")
     private fun createWifiConfig() = WifiConfiguration().apply {
         allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
@@ -118,6 +236,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
         allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP)
     }
 
+
     @Suppress("DEPRECATION")
     private fun connectUnderQ(ssid: String, password: String?, result: Result<Void>) {
         val config = createWifiConfig().apply {
@@ -133,69 +252,6 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
         connectUnderQ(config, result)
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun connectAboveQ(ssid: String, password: String?, result: Result<Void>) {
-        val specifier = WifiNetworkSpecifier.Builder().apply {
-            setSsid(ssid)
-            password?.run {
-                setWpa2Passphrase(this)
-            }
-
-        }.build()
-        connectAboveQ(specifier, result)
-    }
-
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun connectAboveQ(specifier: WifiNetworkSpecifier, result: Result<Void>) {
-        if (networkCallback != null) {
-            connectivityManager.unregisterNetworkCallback(networkCallback!!)
-        }
-
-        val request = NetworkRequest.Builder()
-            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-            .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .setNetworkSpecifier(specifier)
-            .build()
-
-        networkCallback = object : ConnectivityManager.NetworkCallback() {
-
-            var submitted = false
-            override fun onAvailable(network: Network) {
-                connectivityManager.bindProcessToNetwork(network)
-                if (!submitted) {
-                    result.success(null)
-                }
-                submitted = true
-
-            }
-
-            override fun onUnavailable() {
-                if (!submitted) {
-                    result.error(CommonException("unavailable or user cancels"))
-                }
-                submitted = true
-                connectivityManager.bindProcessToNetwork(null)
-                connectivityManager.unregisterNetworkCallback(this)
-                networkCallback = null
-            }
-        }
-
-        connectivityManager.requestNetwork(
-            request,
-            networkCallback!!,
-            Handler(Looper.getMainLooper()),
-        )
-
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun connectByPrefixAboveQ(arg: String, result: Result<Void>) {
-        val specifier = WifiNetworkSpecifier.Builder()
-            .setSsidPattern(PatternMatcher(arg, PatternMatcher.PATTERN_PREFIX))
-            .build()
-        connectAboveQ(specifier, result)
-    }
 
     @Suppress("DEPRECATION")
     private fun connectByPrefixUnderQ(arg: String, result: Result<Void>) {
@@ -260,18 +316,6 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
         networkId = network
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun disconnectAboveQ(result: Result<Void>) {
-        if (networkCallback == null) {
-            result.error(CommonException("connect first"))
-            return
-        } else {
-            connectivityManager.unregisterNetworkCallback(networkCallback!!)
-            connectivityManager.bindProcessToNetwork(null)
-            networkCallback = null
-            result.success(null)
-        }
-    }
 
     @Suppress("DEPRECATION")
     private fun disconnectUnderQ(result: Result<Void>) {
@@ -302,6 +346,7 @@ class WifiConnectorPlugin : FlutterPlugin, WifiConnectorHostApiBridge {
 
     class CommonException(message: String) : Throwable(message)
     class InternalException(message: String) : Throwable(message)
+
 
 }
 
